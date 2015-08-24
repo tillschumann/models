@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+##SBATCH --job-name="h5synapses"
+#SBATCH --time=01:00:00
+#SBATCH --account=proj16
+#SBATCH --partition=debug
+#SBATCH --nodes=10
+#SBATCH --ntasks-per-node=1
+##SBATCH --cpus-per-task=4
+#SBATCH --exclusive
+#SBATCH --output=out.%j.out
+#SBATCH --error=out.%j.err
+ 
+#======START=====
+module load slurm
+
+#source ~/nestio/nest-2.6.0-install/bin/nest_vars.sh
+source ~/nestio/install/nest_V03_seq/bin/nest_vars.sh
+ll `which nest`
+# module on viz cluster
+ 
+export OMP_NUM_THREADS=8
+
+time srun nest Potjans2014Params.sli 
+#srun ~/test/hello
+
+#srun valgrind --tool=helgrind nest Potjans2014Params.sli 
+
+#module load totalview
+#totalview -args srun nest Potjans2014Params.sli

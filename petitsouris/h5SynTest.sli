@@ -1,0 +1,148 @@
+%%% PARAMETER SECTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% define all relevant parameters: changes should be made here
+% all data is placed in the userdict dictionary
+
+/scale 0.2 def %  scaling factor of the network size, total network size = scale*11250 neurons
+/Tsim 1. def % total simulation time in ms
+
+% -------------------------------------------------------------------------------------
+/JE 8.2727013 def
+/JI -33.0908052 def 
+
+0 << /local_num_threads 8 >> SetStatus
+
+/tsodyks2_synapse /syn_ex << /weight JE >> CopyModel
+/tsodyks2_synapse /syn_in << /weight JI >> CopyModel
+
+/connection_dir (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/connectome_output_4) def
+/cell_pos_file (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/cell_body_positions.h5) def
+
+connection_dir cell_pos_file HDF5MikeLoad_s_s
+
+
+
+%0 ShowStatus
+
+ 10593822     /n_ex  Set % size of the excitatory population
+% 1869498     /n_in  Set % size of the inhibitory population
+ 2.0   Hz  /r_ex  Set % mean rate of the excitatory population
+% 2.0   Hz  /r_in  Set % mean rate of the excitatory population
+ 
+ 
+  100.0  pA  /epsc  Set % peak amplitude of excitatory synaptic currents
+ -100.0 pA /ipsc  Set % peak amplitude of inhibitory synaptic currents
+ 0.1   ms  /d     Set % synaptic delay
+
+/poisson_generator Create /ex_pop Set % excitatory population
+%/poisson_generator Create /in_pop Set % inhibitory population
+
+ex_pop
+<<
+  /rate r_ex % multiply rate and number of neurons
+>> SetStatus
+
+%in_pop
+%<<
+%  /rate r_in n_in mul % set a new rate for the inhibitory population.
+%>>
+%SetStatus
+
+
+%(Connect Poisson Generator.. 1 1 12463320) =
+%Rank 0 eq { NumProcesses NumProcesses 12463320 { ex_pop dup epsc d Connect } for } { Rank NumProcesses 12463320 { ex_pop dup epsc d Connect } for } ifelse
+%(Connect Poisson Generator.. done) =
+
+%1668 << /I_e 3760.0 >> SetStatus
+%1848 << /I_e 3760.0 >> SetStatus
+%1849 << /I_e 3760.0 >> SetStatus
+
+%1 1 12463320 { dup << /I_e 376.0 >> SetStatus } for
+Rank 0 eq { NumProcesses NumProcesses 9 { dup << /I_e 550.0 >> SetStatus } for } { Rank NumProcesses 9 { dup << /I_e 550.0 >> SetStatus  } for } ifelse
+
+10 Rank add NumProcesses 100 { dup << /I_e 375.0 >> SetStatus } for
+
+
+0 
+<<
+	/data_path (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/nest_output)
+	/overwrite_files true
+>> SetStatus
+
+(Rank_) Rank cvs join (: Create SpikeDetectors..) join =
+
+%1 1 Rank { /spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>   Create } for
+%/spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create /ownspikes Set
+%Rank 2 add 1 NumProcesses { /spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create } for
+
+/spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create /ownspikes Set
+/multimeter << /to_file true /to_memory false /to_screen false /withgid true /record_from [/V_m] >>  Create /vm Set
+
+(Rank_) Rank cvs join (: Create SpikeDetectors.. done) join =
+
+%(Connect SpikeDetectors..) =
+%NumProcesses Rank add NumProcesses 3500 mul 71000000 { dup ownspikes Connect } for 
+%(Connect SpikeDetectors.. done) =
+
+%(Connect SpikeDetectors..) =
+%NumProcesses Rank add ownspikes Connect 
+%(Connect SpikeDetectors.. done) =
+
+
+%1 205 70900000 { dup ownspikes Connect } for
+
+(Rank_) Rank cvs join (: Connect spikedetector..) join =
+
+/DP NumProcesses 1 mul def
+%Rank 0 eq { NumProcesses DP 71000000 { dup ownspikes Connect } for } { Rank DP 71000000 { dup ownspikes Connect  } for } ifelse
+
+
+
+Rank 0 eq { NumProcesses DP 100 { dup /n Set n GetStatus /local get not { (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join = } if } for } { Rank DP 100 { dup /n Set n GetStatus /local get not { (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join = } if } for } ifelse
+
+%connect neurons with spikedetector
+Rank 0 eq { NumProcesses DP 100 { dup /n Set (Rank_) Rank cvs join (: Neuron ) join n cvs join ( connected to Spikedetector) join = n ownspikes Connect } for } { Rank DP 100 { dup /n Set (Rank_) Rank cvs join (: Neuron) join n cvs join ( connected to Spikedetector) join = n ownspikes Connect } for } ifelse
+
+(Rank_) Rank cvs join (: Connect spikedetector.. done) join =
+
+(Rank_) Rank cvs join (: Connect multimeter..) join =
+
+/DP NumProcesses 1 mul def
+
+%print error if neuron is on different node
+Rank 0 eq { NumProcesses DP 100 { dup /n Set n GetStatus /local get not { (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join = } if } for } { Rank DP 100 { dup /n Set n GetStatus /local get not { (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join = } if } for } ifelse
+
+%connect multimeter with neurons
+Rank 0 eq { NumProcesses DP 100 { dup /n Set (Rank_) Rank cvs join (: Neuron ) join n cvs join ( connected to Multimeter) join = vm n Connect } for } { Rank DP 100 { dup /n Set (Rank_) Rank cvs join (: Neuron) join n cvs join ( connected to Multimeter) join = vm n Connect } for } ifelse
+
+
+
+Rank 0 eq { vm ShowStatus } if
+Rank 0 eq { 3 NumProcesses add ShowStatus } if
+
+(Rank_) Rank cvs join (: Connect multimeter.. done) join =
+
+
+
+%(Rank_) Rank cvs join (: write status to file..) join =
+
+%(GetStatus_) Rank cvs join (.out) join (w) file /f Set
+%1 1 NumProcesses 10 mul { dup /n Set f (Rank_) Rank cvs join (;) join n cvs join (;I_e;) join n GetStatus /I_e get cvs join <- f endl } for
+%f ;
+
+%(Rank_) Rank cvs join (: write status to file.. done) join =
+
+
+0 ShowStatus
+
+%/simtime Tsim ms        % simulated time
+1000 Simulate
+(Rank_) Rank cvs join (: 0 Simulation done) join =
+
+%0 << /data_prefix (2) >> SetStatus
+%2000 Simulate
+%(Rank_) Rank cvs join (: 2 Simulation done) join =
+
+%0 << /data_prefix (3) >> SetStatus
+%3000 Simulate
+%(Rank_) Rank cvs join (: 3 Simulation done) join =
