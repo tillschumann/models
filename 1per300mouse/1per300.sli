@@ -1,0 +1,98 @@
+%%% PARAMETER SECTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% define all relevant parameters: changes should be made here
+% all data is placed in the userdict dictionary
+
+/scale 0.2 def %  scaling factor of the network size, total network size = scale*11250 neurons
+/Tsim 1. def % total simulation time in ms
+
+% -------------------------------------------------------------------------------------
+
+0 << /local_num_threads 1 >> SetStatus
+
+/subnet_name (subnet_wl) def
+/neuronmodel_name /aeif_cond_exp def
+/neuronparam_names [(C_m) (Delta_T) (E_L) (E_ex) (E_in) (V_peak) (V_reset) (V_th) (a) (b) (tau_syn_ex) (tau_syn_in)] def
+/cell_pos_file (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/1_300/ptneu_brain.h5) def
+[] [] subnet_name neuronparam_names neuronmodel_name cell_pos_file H5NeuronCsX_s_a_s /offset Set
+
+
+/synmodel_name /tsodyks2_synapse def
+/hdf5param_names [(delay) (weight) (U0) (TauRec) (TauFac)] def
+/synparam_names [(delay) (weight) (U) (tau_rec) (tau_fac)] def
+/synparam_facts [1. 1. 1. 1. 1.] def
+/synparam_offset [0. 0. 0. 0. 0.] def
+%/synmodel_name /static_synapse def
+%/synparam_names [(delay) (weight)] def
+%/synparam_facts [1. 0.] def
+%/synparam_offset [0. 1.] def
+/connection_dir (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/1_300/syn_long.h5) def
+hdf5param_names synparam_offset offset synparam_names synparam_facts synmodel_name connection_dir HDF5MikeLoad_s_s
+
+%/synmodel_name /tsodyks2_synapse def
+%/synparam_names [(delay) (weight) (U0) (TauRec) (TauFac)] def
+%/connection_dir (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/syn_short_25_20151125.h5) def
+%offset synparam_names synparam_facts synmodel_name connection_dir HDF5MikeLoad_s_s
+
+1 GetLocalChildren { 
+    dup << /I_e 2500.0 pA >> SetStatus
+} forall
+
+0 
+<<
+	/data_path (/gpfs/bbp.cscs.ch/home/schumann/nestio/models/1per300mouse/nest_output15)
+	/overwrite_files true
+>> SetStatus
+
+%(Rank_) Rank cvs join (: Create SpikeDetectors..) join =
+
+/spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create /ownspikes Set
+
+%(Rank_) Rank cvs join (: Create SpikeDetectors.. done) join =
+
+%(Rank_) Rank cvs join (: Connect spikedetector..) join =
+
+/DP NumProcesses 1 mul def
+Rank offset leq
+{
+  NumProcesses Rank add DP 247026
+  {
+    dup /n Set
+    n GetStatus /local get not
+    {
+      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
+    } if
+    %(Rank_) Rank cvs join (: Neuron ) join n cvs join ( connected to Spikedetector) join =
+    n ownspikes Connect
+  } for
+}
+{
+  Rank DP 247026
+  {
+    dup /n Set
+    n GetStatus /local get not
+    {
+      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
+    } if
+    %(Rank_) Rank cvs join (: Neuron) join n cvs join ( connected to Spikedetector) join =
+    n ownspikes Connect
+  } for
+} ifelse
+
+%(Rank_) Rank cvs join (: Connect spikedetector.. done) join =
+
+
+Rank 230 eq
+{
+  178150 ShowStatus
+  << /source 202403 /target 178150 >> FindConnections /c1 Set
+  c1 0 get GetStatus info
+}
+if
+
+
+%/simtime Tsim ms        % simulated time
+%4 Simulate
+%1000 Simulate
+(Rank_) Rank cvs join (: 0 Simulation done) join =
+

@@ -15,7 +15,9 @@
 /tsodyks2_synapse /syn_ex << /weight JE >> CopyModel
 /tsodyks2_synapse /syn_in << /weight JI >> CopyModel
 
-/connection_dir (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/connectome_output_4) def
+/iaf_neuron 75000000 Create
+
+/connection_dir (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/syn.h5) def
 /cell_pos_file (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/cell_body_positions.h5) def
 
 connection_dir cell_pos_file HDF5MikeLoad_s_s

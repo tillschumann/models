@@ -15,13 +15,30 @@
 /JE 1500.0 pA def
 /JI g JE mul  def 
 
-/tsodyks2_synapse /syn_ex << /weight JE >> CopyModel
-/tsodyks2_synapse /syn_in << /weight JI >> CopyModel
+%/subnet Create
+%1 ChangeSubnet
+%/aeif_cond_exp 100 Create
 
-/connection_dir (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/connectome_output_4) def
-/cell_pos_file (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/cell_body_positions.h5) def
+%0 ChangeSubnet
 
-connection_dir cell_pos_file HDF5MikeLoad_s_s
+%/aeif_cond_exp 74999900 Create
+
+%/tsodyks2_synapse /syn_ex << /weight JE >> CopyModel
+%/tsodyks2_synapse /syn_in << /weight JI >> CopyModel
+
+/subnet_name (subnet0) def
+/neuronmodel_name /aeif_cond_exp def
+/neuronparam_names [(C_m) (Delta_T) (E_L) (E_ex) (E_in) (V_peak) (V_reset) (V_th) (a) (b)] def
+/cell_pos_file (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/ptneu_brain_113935285.h5) def
+subnet_name neuronparam_names neuronmodel_name cell_pos_file H5NeuronCsX_s_a_s
+
+
+/neuron_offset 2 def
+/synmodel_name /tsodyks2_synapse def
+/synparam_names [(delay) (weight) (U0) (TauRec) (TauFac)] def
+/connection_dir (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/syn_exp1_o.h5) def
+
+neuron_offset synparam_names synmodel_name connection_dir HDF5MikeLoad_s_s
 
 
 /offset 2 def
@@ -48,37 +65,38 @@ connection_dir cell_pos_file HDF5MikeLoad_s_s
 %1849 << /I_e 3760.0 >> SetStatus
 
 %1 1 12463320 { dup << /I_e 376.0 >> SetStatus } for
-Rank offset leq
-{
-  NumProcesses Rank add NumProcesses 9 
-  {
-    dup << /I_e 1500.0 pA >> SetStatus
-  } for
-}
-{
-  Rank NumProcesses 9
-  {
-    dup << /I_e 1500.0 pA >> SetStatus 
-  } for
-} ifelse
+%Rank offset leq
+%{
+%  NumProcesses Rank add NumProcesses 9 
+%  {
+%    dup << /I_e 1500.0 pA >> SetStatus
+%  } for
+%}
+%{
+%  Rank NumProcesses 9
+%  {
+%    dup << /I_e 1500.0 pA >> SetStatus 
+%  } for
+%} ifelse
+
+1 GetLocalChildren { 
+    dup << /I_e 2500.0 pA >> SetStatus
+} forall
 
 %10 Rank add NumProcesses 100 { dup << /I_e 375.0 >> SetStatus } for
 
 
 0 
 <<
-	/data_path (/gpfs/bbp.cscs.ch/home/schumann/nestio/petitsouris/nest_output)
+	/data_path (/gpfs/bbp.cscs.ch/home/schumann/nestio/models/petitsouris/nest_output)
 	/overwrite_files true
 >> SetStatus
 
 (Rank_) Rank cvs join (: Create SpikeDetectors..) join =
 
-%1 1 Rank { /spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>   Create } for
-%/spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create /ownspikes Set
-%Rank 2 add 1 NumProcesses { /spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create } for
 
 /spike_detector << /to_file true /to_memory false /to_screen false /withgid true >>    Create /ownspikes Set
-/multimeter << /to_file true /to_memory false /to_screen false /withgid true /record_from [/V_m] >>  Create /vm Set
+%/multimeter << /to_file true /to_memory false /to_screen false /withgid true /record_from [/V_m] >>  Create /vm Set
 
 (Rank_) Rank cvs join (: Create SpikeDetectors.. done) join =
 
@@ -99,10 +117,10 @@ Rank offset leq
 
 
 
-/DP NumProcesses 1 mul def
+/DP NumProcesses 10 mul def
 Rank offset leq
 {
-  NumProcesses Rank add DP 10 
+  NumProcesses Rank add DP 74107932 
   {
     dup /n Set
     n GetStatus /local get not
@@ -114,7 +132,7 @@ Rank offset leq
   } for
 }
 {
-  Rank DP 10
+  Rank DP 74107932
   {
     dup /n Set
     n GetStatus /local get not
@@ -128,43 +146,6 @@ Rank offset leq
 
 (Rank_) Rank cvs join (: Connect spikedetector.. done) join =
 
-(Rank_) Rank cvs join (: Connect multimeter..) join =
-
-
-
-%connect multimeter with neurons
-/DP NumProcesses 1 mul def
-Rank offset leq
-{
-  NumProcesses Rank add DP 100
-  {
-    dup /n Set
-    n GetStatus /local get not
-    {
-      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
-    } if
-    %(Rank_) Rank cvs join (: Neuron ) join n cvs join ( connected to Multimeter) join =
-    vm n Connect
-  } for
-}
-{
-  Rank DP 100
-  { 
-    dup /n Set
-    n GetStatus /local get not
-    {
-      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
-    } if
-    %(Rank_) Rank cvs join (: Neuron) join n cvs join ( connected to Multimeter) join =
-    vm n Connect
-  } for
-} ifelse
-
-
-%Rank 0 eq { vm ShowStatus } if
-%Rank 0 eq { 3 NumProcesses add ShowStatus } if
-
-(Rank_) Rank cvs join (: Connect multimeter.. done) join =
 
 
 
@@ -177,16 +158,8 @@ Rank offset leq
 %(Rank_) Rank cvs join (: write status to file.. done) join =
 
 
-%0 ShowStatus
+0 ShowStatus
 
 %/simtime Tsim ms        % simulated time
 1000 Simulate
 (Rank_) Rank cvs join (: 0 Simulation done) join =
-
-%0 << /data_prefix (2) >> SetStatus
-%2000 Simulate
-%(Rank_) Rank cvs join (: 2 Simulation done) join =
-
-%0 << /data_prefix (3) >> SetStatus
-%3000 Simulate
-%(Rank_) Rank cvs join (: 3 Simulation done) join =

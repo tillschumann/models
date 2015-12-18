@@ -1,0 +1,160 @@
+0 << /local_num_threads 8 >> SetStatus
+
+
+
+%%% PARAMETER SECTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% define all relevant parameters: changes should be made here
+% all data is placed in the userdict dictionary
+
+/scale 0.2 def %  scaling factor of the network size, total network size = scale*11250 neurons
+/Tsim 1. def % total simulation time in ms
+
+% -------------------------------------------------------------------------------------
+/g -1.0 def
+
+/JE 30.0 def
+/JI JE g mul def 
+
+/tsodyks2_synapse /syn_ex << /weight JE >> CopyModel
+/tsodyks2_synapse /syn_in << /weight JI >> CopyModel
+
+%/static_synapse /syn_ex << /weight JE >> CopyModel
+%/static_synapse /syn_in << /weight JI >> CopyModel
+
+/connection_dir (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/connectome_output_4) def
+/cell_pos_file (/gpfs/bbp.cscs.ch/scratch/gss/bgq/schumann/cell_body_positions.h5) def
+
+
+(Rank_) Rank cvs join (: Connect.. t=) join time cvs join =
+
+connection_dir cell_pos_file HDF5MikeLoad_s_s
+
+(Rank_) Rank cvs join (: Connect.. done t=) join time cvs join =
+
+
+/offset 0 def
+
+(Rank_) Rank cvs join (: Set Stimulus.. t=) join time cvs join =
+
+Rank offset leq
+{
+  NumProcesses Rank add NumProcesses 12463103 
+  {
+    dup << /I_e 1000.0 pA >> SetStatus
+  } for
+}
+{
+  Rank NumProcesses 12463103
+  {
+    dup << /I_e 1000.0 pA >> SetStatus 
+  } for
+} ifelse
+
+(Rank_) Rank cvs join (: Set Stimulus.. done t=) join time cvs join =
+
+0 
+<<
+  /data_path (/gpfs/bbp.cscs.ch/home/schumann/nestio/models/fullmouse/nest_output)
+  /overwrite_files true
+>> SetStatus
+
+(Rank_) Rank cvs join (: Create SpikeDetectors.. t=) join time cvs join =
+
+/spike_detector 
+<< 
+    /to_file true
+    /to_memory false
+    /to_screen false
+    /withgid true 
+>> Create /ownspikes Set
+
+
+/multimeter
+<< 
+  /to_file true
+  /to_memory false
+  /to_screen false
+  /withgid true
+  /record_from [/V_m]
+>>  Create /vm Set
+
+(Rank_) Rank cvs join (: Create SpikeDetectors.. done t=) join time cvs join =
+
+
+(Rank_) Rank cvs join (: Connect spikedetector.. t=) join time cvs join =
+
+%connect neurons with spikedetector
+/DP NumProcesses 20 mul def
+Rank offset leq
+{
+  NumProcesses Rank add DP 71000000 
+  {
+    dup /n Set
+    n GetStatus /local get not
+    {
+      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
+    } if
+    %(Rank_) Rank cvs join (: Neuron ) join n cvs join ( connected to Spikedetector) join =
+    n ownspikes Connect
+  } for
+}
+{
+  Rank DP 71000000
+  {
+    dup /n Set
+    n GetStatus /local get not
+    {
+      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
+    } if
+    %(Rank_) Rank cvs join (: Neuron) join n cvs join ( connected to Spikedetector) join =
+    n ownspikes Connect
+  } for
+} ifelse
+
+(Rank_) Rank cvs join (: Connect spikedetector.. done t=) join time cvs join =
+
+(Rank_) Rank cvs join (: Connect multimeter.. t=) join time cvs join =
+
+%connect multimeter with neurons
+/DP NumProcesses 1 mul def
+Rank offset leq
+{
+  NumProcesses Rank add DP 10240
+  {
+    dup /n Set
+    n GetStatus /local get not
+    {
+      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
+    } if
+    %(Rank_) Rank cvs join (: Neuron ) join n cvs join ( connected to Multimeter) join =
+    vm n Connect
+  } for
+}
+{
+  Rank DP 10240
+  { 
+    dup /n Set
+    n GetStatus /local get not
+    {
+      (ERROR neuron ) n cvs join (not on rank ) join Rank cvs join =
+    } if
+    %(Rank_) Rank cvs join (: Neuron) join n cvs join ( connected to Multimeter) join =
+    vm n Connect
+  } for
+} ifelse
+
+(Rank_) Rank cvs join (: Connect multimeter.. done t=) join time cvs join =
+
+
+
+0 ShowStatus
+
+(Rank_) Rank cvs join (: Simulation t=) join time cvs join =
+
+%/simtime Tsim ms        % simulated time
+1000 Simulate
+
+(Rank_) Rank cvs join (: Simulation done t=) join time cvs join =
+
+

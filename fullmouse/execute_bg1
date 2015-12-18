@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+##SBATCH --job-name="fullmouse"
+#SBATCH --time=10:00:00
+#SBATCH --account=proj16
+#SBATCH --partition=prod
+#SBATCH --nodes=2K
+#SBATCH --ntasks-per-node=1
+##SBATCH --cpus-per-task=4
+#SBATCH --exclusive
+#SBATCH --output=out.%j.out
+#SBATCH --error=out.%j.err
+ 
+#======START=====
+module load slurm
+
+source /gpfs/bbp.cscs.ch/home/schumann/nestio/install/nest_ambm/bin/nest_vars.sh
+
+
+# module on viz cluster
+ 
+export OMP_NUM_THREADS=8
+ 
+time srun nest h5SynTest.sli 
+#srun ~/test/hello
+
+#module load totalview
+#totalview -args srun nest h5SynTest.sli
