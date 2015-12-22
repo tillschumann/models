@@ -4,7 +4,7 @@
 #SBATCH --time=1:00:00
 #SBATCH --account=proj16
 #SBATCH --partition=debug
-#SBATCH --nodes=256
+#SBATCH --nodes=128
 #SBATCH --ntasks-per-node=1
 ##SBATCH --cpus-per-task=4
 #SBATCH --exclusive
